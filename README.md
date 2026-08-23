@@ -1,3 +1,7 @@
+current:
+install the userscript by opening: https://raw.githubusercontent.com/allanlaal/google-keep-tab-titles/refs/heads/main/google-keep-tab-titles.user.js
+
+old:
 # Google Keep Tab Titles
 
 A simple Chrome extension that dynamically updates the Google Keep tab title to match the title of the currently open note. This makes it easier to find the specific note you're working on when you have multiple tabs open.
