@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name         Google Keep Dynamic Tab Title
 // @namespace    http://tampermonkey.net/
-// @version      1.1.0
+// @version      1.2.0
 // @description  Updates document title to the current note title on URL/DOM changes in Google Keep
 // @match        https://keep.google.com/*
 // @grant        none
 // @run-at       document-idle
-// ==UserScript==
+// @downloadURL  https://raw.githubusercontent.com/allanlaal/google-keep-tab-titles/main/google-keep-tab-titles.user.js
+// @updateURL    https://raw.githubusercontent.com/allanlaal/google-keep-tab-titles/main/google-keep-tab-titles.user.js
+// ==/UserScript==
 
 (function() {
     'use strict';
