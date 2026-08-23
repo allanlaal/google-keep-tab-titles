@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Keep Dynamic Tab Title
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      1.1.0
 // @description  Updates document title to the current note title on URL/DOM changes in Google Keep
 // @match        https://keep.google.com/*
 // @grant        none
@@ -12,6 +12,23 @@
     'use strict';
 
     function getNoteTitle() {
+        // 1. First priority: Check inside an actively opened modal dialog
+        const modal = document.querySelector('div[role="dialog"]');
+        if (modal) {
+            const modalTextboxes = Array.from(modal.querySelectorAll('div[role="textbox"]'))
+                .filter(el => el.getBoundingClientRect().width > 0);
+
+            if (modalTextboxes.length > 0) {
+                // The first textbox inside the dialog is always the Title field
+                const titleText = modalTextboxes[0].innerText.trim();
+                const cleanTitle = titleText.split('\n')[0];
+                if (cleanTitle.length > 0) {
+                    return cleanTitle + " - Google Keep";
+                }
+            }
+        }
+
+        // 2. Fallback: Search visible main textboxes if opened inline
         const visibleTextBoxes = Array.from(document.querySelectorAll('div[role="textbox"]'))
             .filter(el => el.getBoundingClientRect().width > 0);
 
@@ -25,10 +42,11 @@
         if (widestElements.length === 1) {
             const titleElement = widestElements[0];
             const title = titleElement.innerText.trim();
-            return title.split('\n')[0] || "Google Keep";
-        } else {
-            return "Google Keep";
+            const cleanTitle = title.split('\n')[0];
+            return cleanTitle.length > 0 ? cleanTitle + " - Google Keep" : "Google Keep";
         }
+
+        return "Google Keep";
     }
 
     function updateTitle() {
@@ -50,9 +68,9 @@
         };
     }
 
-    const throttledUpdateTitle = throttle(updateTitle, 50);
+    const throttledUpdateTitle = throttle(updateTitle, 100);
 
-    // Watch DOM changes (covers note edits and open/close overlays)
+    // Watch DOM mutations
     const observer = new MutationObserver(throttledUpdateTitle);
     observer.observe(document.body, {
         childList: true,
@@ -60,7 +78,7 @@
         characterData: true
     });
 
-    // Intercept History API methods to trigger updates on SPA URL navigation
+    // Intercept History API (pushState/replaceState)
     const patchHistoryMethod = (type) => {
         const original = history[type];
         return function() {
@@ -73,8 +91,12 @@
     history.pushState = patchHistoryMethod('pushState');
     history.replaceState = patchHistoryMethod('replaceState');
 
+    // Handle hash updates and popstate events (direct note clicks rely heavily on hash changes)
     window.addEventListener('popstate', () => window.dispatchEvent(new Event('locationchange')));
-    window.addEventListener('locationchange', throttledUpdateTitle);
+    window.addEventListener('hashchange', throttledUpdateTitle);
+    window.addEventListener('locationchange', () => {
+        setTimeout(updateTitle, 50); // slight delay to wait for Keep DOM render
+    });
 
     // Initial run
     updateTitle();
